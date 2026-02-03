@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Notice Board</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="student-page">
+
+<!-- 🌙 Dark Mode Button -->
+<button onclick="toggleDarkMode()" style="float:right; margin:15px;">
+    🌙 Dark Mode
+</button>
+
+<!-- ===== COLLEGE HEADER (LOGO LEFT + DETAILS RIGHT) ===== -->
+<div class="college-header">
+    <img src="logo.png" alt="College Logo" class="college-logo">
+    <div class="college-info">
+        <h1>WAVOO WAJEEHA WOMEN'S COLLEGE OF ARTS AND SCIENCE</h1>
+        <p>Kayalpattinam – 628204</p>
+        <p>(Affiliated to Manonmaniam Sundaranar University, Tirunelveli)</p>
+        <p>Run by Wavoo SAR Educational Trust <span class="minority">(Minority Institution)</span></p>
+        <p><strong>NAAC ACCREDITATION:</strong> <span class="naac-grade">B++</span> | CGPA 2.85 | (First Cycle)</p>
+    </div>
+</div>
+
+<!-- ===== STUDENT CONTENT ===== -->
+<div class="container">
+
+    <h2>Student Notice Board</h2>
+
+    <!-- Year Filter -->
+    <select id="yearFilter" onchange="applyFilters()">
+        <option value="All">All Years</option>
+        <option value="I">I Year</option>
+        <option value="II">II Year</option>
+        <option value="III">III Year</option>
+    </select>
+
+    <!-- Category Filter -->
+    <select id="categoryFilter" onchange="applyFilters()">
+        <option value="All">All</option>
+        <option value="General">General</option>
+        <option value="Exam">Exam</option>
+        <option value="Event">Event</option>
+    </select>
+
+    <!-- Notification for new/unread notices -->
+    <div id="notification"
+        style="display:none; background:#4CAF50; color:white; padding:10px; margin-bottom:10px; border-radius:5px; text-align:center;">
+        🔔 New Notice Added!
+    </div>
+
+    <!-- Notices Display -->
+    <div id="noticeList"></div>
+
+</div>
+<button onclick="showSavedStudentNotices()">
+    ⭐ View Saved Notices
+</button>
+
+<button onclick="displayNotices()">
+    📋 View All Notices
+</button>
+
+<script src="script.js"></script>
+
+<script>
+
+// ===== COMBINED FILTER FUNCTION (YEAR + CATEGORY) =====
+function applyFilters() {
+    let selectedYear = document.getElementById("yearFilter").value;
+    let selectedCat = document.getElementById("categoryFilter").value;
+
+    let allNotices = JSON.parse(localStorage.getItem("notices")) || [];
+    let today = new Date().toISOString().split("T")[0];
+
+    // only active notices
+    allNotices = allNotices.filter(n => n.expiry >= today);
+
+    // year filter
+    if (selectedYear !== "All") {
+        allNotices = allNotices.filter(n => n.year === selectedYear);
+    }
+
+    // category filter
+    if (selectedCat !== "All") {
+        allNotices = allNotices.filter(n => n.cat === selectedCat);
+    }
+
+    // display filtered notices
+    displayNotices(allNotices);
+}
+</script>
+
+</body>
+</html>

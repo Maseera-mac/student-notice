@@ -1,0 +1,154 @@
+/* ===== GENERAL STYLES ===== */
+body {
+    font-family: Arial;
+    background: #f2f2f2;
+}
+
+.container {
+    width: 50%;
+    margin: auto;
+    background: white;
+    padding: 20px;
+    margin-top: 40px;
+}
+
+input, textarea, select {
+    width: 100%;
+    padding: 8px;
+    margin: 5px 0;
+}
+
+button {
+    padding: 8px;
+    background: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+.notice {
+    background-color: white;
+    padding: 12px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    border: 2px solid #ccc;
+}
+
+.notice button {
+    background: red;
+    color: white;
+    border: none;
+    padding: 5px 8px;
+    margin-top: 5px;
+    cursor: pointer;
+}
+
+.notice.unread {
+    border: 3px solid red !important;
+    background-color: #ffecec;
+}
+
+.unread-text {
+    color: red;
+    font-weight: bold;
+}
+
+/* ===== DARK MODE ===== */
+body.dark {
+    background: #121212;
+    color: #e0e0e0;
+}
+
+body.dark .container {
+    background: #1e1e1e;
+    color: #ffffff;
+}
+
+body.dark input,
+body.dark textarea,
+body.dark select {
+    background: #2a2a2a;
+    color: #ffffff;
+    border: 1px solid #555;
+}
+
+body.dark button {
+    background: #333;
+    color: #ffffff;
+}
+
+body.dark .notice {
+    background: #1f1f1f;
+    color: #ffffff;
+    border: 2px solid #555;
+}
+
+body.dark .notice small {
+    color: #cccccc;
+}
+
+body.dark .unread-text {
+    color: #ff6b6b;
+}
+
+/* ===== COLLEGE HEADER (FULL WIDTH BLUE BOX + LOGO LEFT) ===== */
+/* ===== COLLEGE HEADER (LOGO LEFT + DETAILS RIGHT) ===== */
+.college-header {
+    width: 100%;
+    background-color: #0d47a1; /* dark blue */
+    color: white;
+    display: flex;             /* flex layout: logo left, text right */
+    align-items: center;       /* vertical center alignment */
+    padding: 20px 30px;
+    gap: 20px;                 /* space between logo and text */
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+
+/* Logo styling */
+.college-header .college-logo {
+    width: 100px; /* adjust size */
+    height: auto;
+}
+
+/* College info text */
+.college-header .college-info {
+    display: flex;
+    flex-direction: column;   /* stack text vertically */
+    text-align: left;         /* left-aligned text */
+}
+
+/* College name */
+.college-header .college-info h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 800;
+}
+
+/* Other college details */
+.college-header .college-info p {
+    margin: 2px 0;
+    font-size: 16px;
+}
+
+/* Highlight minority text */
+.college-header .college-info .minority {
+    color: #ffeb3b;
+    font-weight: bold;
+}
+
+/* Dark mode support */
+body.dark .college-header {
+    background-color: #1e1e1e;
+    color: #ffffff;
+    box-shadow: 0 4px 10px rgba(255,255,255,0.1);
+}
+/* ===== ADMIN ANALYTICS / OTHER STYLES ===== */
+#analytics h3 {
+    margin-bottom: 10px;
+}
+
+#analytics p {
+    margin: 5px 0;
+}
