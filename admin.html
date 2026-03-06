@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Notice Board</title>
+    <style>/* ===== GENERAL STYLES ===== */
+body {
+    font-family: Arial, sans-serif;
+    background: #f2f2f2;
+    margin: 0;
+    padding: 0;
+}
+.container {
+    width: 50%;
+    margin: 40px auto;
+    background: white;
+    padding: 20px;
+    box-sizing: border-box;
+}
+input, textarea, select {
+    width: 100%;
+    padding: 8px;
+    margin: 5px 0;
+    box-sizing: border-box;
+}
+button {
+    padding: 8px;
+    background: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+}
+button:hover {
+    opacity: 0.9;
+}
+.notice {
+    background-color: white;
+    padding: 12px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    border: 2px solid #ccc;
+}
+.notice.unread {
+    border: 3px solid red !important;
+    background-color: #ffecec;
+}
+.unread-text {
+    color: red;
+    font-weight: bold;
+}
+/* ===== SAVED NOTICES SECTION ===== */
+#savedNoticeList {
+    margin-top: 15px;
+}
+#savedNoticeList .notice {
+    border: 2px solid #2196F3; /* Blue border for saved notices */
+    background-color: #e3f2fd; /* Light blue background */
+}
+body.dark #savedNoticeList .notice {
+    border: 2px solid #64b5f6;
+    background-color: #1565c0; /* Dark blue background for dark mode */
+    color: #ffffff;
+}
+/* ===== DARK MODE ===== */
+body.dark {
+    background: #121212;
+    color: #e0e0e0;
+}
+body.dark .container {
+    background: #1e1e1e;
+    color: #ffffff;
+}
+body.dark input,
+body.dark textarea,
+body.dark select {
+    background: #2a2a2a;
+    color: #ffffff;
+    border: 1px solid #555;
+}
+body.dark button {
+    background: #333;
+    color: #ffffff;
+}
+body.dark .notice {
+    background: #1f1f1f;
+    color: #ffffff;
+    border: 2px solid #555;
+}
+body.dark .notice small {
+    color: #cccccc;
+}
+body.dark .unread-text {
+    color: #ff6b6b;
+}
+/* ===== COLLEGE HEADER ===== */
+.college-header {
+    width: 100%;
+    background-color: #0d47a1;
+    color: white;
+    display: flex;
+    align-items: center;
+    padding: 20px 30px;
+    gap: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    border-radius: 8px;
+    margin-bottom: 30px;
+    box-sizing: border-box;
+}
+.college-header .college-logo {
+    width: 100px;
+    height: auto;
+}
+.college-header .college-info {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+.college-header .college-info h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 800;
+}
+.college-header .college-info p {
+    margin: 2px 0;
+    font-size: 16px;
+}
+.college-header .college-info .minority {
+    color: #ffeb3b;
+    font-weight: bold;
+}
+body.dark .college-header {
+    background-color: #1e1e1e;
+    color: #ffffff;
+    box-shadow: 0 4px 10px rgba(255,255,255,0.1);
+}
+/* ===== RESPONSIVENESS FIX ===== */
+@media (max-width: 768px) {
+    .container {
+        width: 90%;
+    }
+    .college-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    .college-header .college-logo {
+        width: 80px;
+        margin-bottom: 10px;
+    }
+}</style>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+        import { getDatabase, ref, set, push, get, remove } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
+
+        // ===== ACCESS PROTECTION =====
+        // Block only on GitHub Pages. Local file = always show after login.
+        function checkAccess() {
+            if (window.location.hostname.endsWith("github.io")) {
+                document.body.innerHTML = `
+                    <div style="text-align:center;margin-top:100px;font-family:Arial;">
+                        <h2 style="color:red;">&#9940; Access Denied</h2>
+                        <p>The Admin Panel is only accessible from the authorized local system.</p>
+                        <a href="index.html" style="color:#007bff;">&#8592; Go to Student Notice Board</a>
+                    </div>`;
+                return false;
+            }
+            // If opened locally but skipped login, redirect to login
+            if (!sessionStorage.getItem("admin_logged_in")) {
+                window.location.href = "adminlogin.html";
+                return false;
+            }
+            return true;
+        }
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBMHtfDrYlaAFE49lVTvmJ2MWdQnuAPJro",
+            authDomain: "digital-notice-board-27c9c.firebaseapp.com",
+            databaseURL: "https://digital-notice-board-27c9c-default-rtdb.firebaseio.com",
+            projectId: "digital-notice-board-27c9c",
+            storageBucket: "digital-notice-board-27c9c.firebasestorage.app",
+            messagingSenderId: "835434924523",
+            appId: "1:835434924523:web:2558d4d4f6cfcbb97671ae"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        let notices = [];
+
+        async function loadNoticesFromFirebase() {
+            try {
+                const snapshot = await get(ref(db, "notices"));
+                if (snapshot.exists()) {
+                    notices = snapshot.val();
+                    if (!Array.isArray(notices)) notices = Object.values(notices);
+                    notices.sort((a, b) => b.timestamp - a.timestamp);
+                } else { notices = []; }
+                displayNotices();
+                updateAnalytics();
+            } catch(err) { console.error(err); alert("Failed to load notices."); }
+        }
+
+        window.addNotice = async function() {
+            const title = document.getElementById("title").value.trim();
+            const msg   = document.getElementById("message").value.trim();
+            const cat   = document.getElementById("category").value;
+            const expiry= document.getElementById("expiry").value;
+            const year  = document.getElementById("year").value;
+            if (!title || !msg || !expiry) { alert("Please fill all fields"); return; }
+            const newNotice = { title, msg, cat, expiry, year, read: false, timestamp: Date.now() };
+            try {
+                await set(push(ref(db, "notices")), newNotice);
+                notices.unshift(newNotice);
+                displayNotices(); updateAnalytics();
+                showSuccessPopup("Notice Added Successfully!");
+            } catch(err) { alert("Failed to add notice."); }
+        }
+
+        window.deleteNotice = async function(timestamp) {
+            if (!confirm("Delete this notice?")) return;
+            try {
+                const snapshot = await get(ref(db, "notices"));
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    for (const key in data) {
+                        if (data[key].timestamp === timestamp) {
+                            await remove(ref(db, "notices/" + key)); break;
+                        }
+                    }
+                }
+                notices = notices.filter(n => n.timestamp !== timestamp);
+                displayNotices(); updateAnalytics();
+            } catch(err) { alert("Failed to delete notice."); }
+        }
+
+        window.displayNotices = function(list = null, showExpired = false) {
+            const box = document.getElementById("noticeList");
+            const today = new Date().toISOString().split("T")[0];
+            let data = list || notices;
+            box.innerHTML = "";
+            if (!showExpired) data = data.filter(n => n.expiry >= today);
+            data.sort((a, b) => b.timestamp - a.timestamp).forEach(n => {
+                let div = document.createElement("div");
+                div.className = "notice";
+                div.innerHTML = "<b>" + n.title + "</b> (" + n.cat + ") [" + n.year + "]<br>" +
+                    n.msg + "<br><small>Valid till: " + n.expiry + "</small><br>" +
+                    "<button onclick=\"deleteNotice(" + n.timestamp + ")\">Delete</button>";
+                box.appendChild(div);
+            });
+        }
+
+        window.showExpiredNotices = function() {
+            const today = new Date().toISOString().split("T")[0];
+            displayNotices(notices.filter(n => n.expiry < today), true);
+        }
+
+        window.updateAnalytics = function() {
+            const today = new Date().toISOString().split("T")[0];
+            document.getElementById("totalCount").textContent  = notices.length;
+            document.getElementById("activeCount").textContent = notices.filter(n => n.expiry >= today).length;
+            document.getElementById("unreadCount").textContent = notices.filter(n => !n.read && n.expiry >= today).length;
+        }
+
+        window.showSuccessPopup = function(msg) { alert(msg); }
+
+        window.toggleDarkMode = function() {
+            document.body.classList.toggle("dark");
+            localStorage.setItem("dark_admin", document.body.classList.contains("dark") ? "on" : "off");
+        }
+
+        window.onload = function() {
+            if (!checkAccess()) return;
+            loadNoticesFromFirebase();
+            if (localStorage.getItem("dark_admin") === "on") document.body.classList.add("dark");
+        }
+    </script>
+</head>
+<body>
+
+<button onclick="toggleDarkMode()" style="float:right; margin:15px;">&#127769; Dark Mode</button>
+
+<div class="college-header">
+    <img src="college-logo.png" alt="College Logo" class="college-logo">
+    <div class="college-info">
+        <h1>WAVOO WAJEEHA WOMEN&#39;S COLLEGE OF ARTS AND SCIENCE</h1>
+        <p>Kayalpattinam &#8211; 628204</p>
+        <p>(Affiliated to Manonmaniam Sundaranar University, Tirunelveli)</p>
+        <p>Run by Wavoo SAR Educational Trust <span class="minority">(Minority Institution)</span></p>
+        <p><strong>NAAC ACCREDITATION:</strong> <span class="naac-grade">B++</span> | CGPA 2.85</p>
+    </div>
+</div>
+
+<div class="container">
+    <h2>Admin Dashboard</h2>
+
+    <div id="analytics" style="margin-bottom:20px;">
+        <h3>&#128202; Notice Analytics</h3>
+        <p>Total Notices: <b id="totalCount">0</b></p>
+        <p>Active Notices: <b id="activeCount">0</b></p>
+        <p>Unread Notices: <b id="unreadCount">0</b></p>
+    </div>
+
+    <input type="text" id="title" placeholder="Notice Title">
+    <textarea id="message" placeholder="Notice Description"></textarea>
+
+    <label>Expiry Date:</label>
+    <input type="date" id="expiry">
+
+    <select id="category">
+        <option>General</option>
+        <option>Exam</option>
+        <option>Event</option>
+    </select>
+    <label>Year:</label>
+    <select id="year">
+        <option value="All">All</option>
+        <option value="I">I Year</option>
+        <option value="II">II Year</option>
+        <option value="III">III Year</option>
+    </select>
+
+    <button onclick="addNotice()">Add Notice</button>
+    <button onclick="showExpiredNotices()">View Expired Notices</button>
+    <button onclick="displayNotices()">View Active Notices</button>
+
+    <h3>All Notices</h3>
+    <div id="noticeList"></div>
+</div>
+
+</body>
+</html>

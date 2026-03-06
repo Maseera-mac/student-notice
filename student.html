@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Notice Board</title>
+    <style>/* ===== GENERAL STYLES ===== */
+body {
+    font-family: Arial, sans-serif;
+    background: #f2f2f2;
+    margin: 0;
+    padding: 0;
+}
+.container {
+    width: 50%;
+    margin: 40px auto;
+    background: white;
+    padding: 20px;
+    box-sizing: border-box;
+}
+input, textarea, select {
+    width: 100%;
+    padding: 8px;
+    margin: 5px 0;
+    box-sizing: border-box;
+}
+button {
+    padding: 8px;
+    background: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+}
+button:hover {
+    opacity: 0.9;
+}
+.notice {
+    background-color: white;
+    padding: 12px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    border: 2px solid #ccc;
+}
+.notice.unread {
+    border: 3px solid red !important;
+    background-color: #ffecec;
+}
+.unread-text {
+    color: red;
+    font-weight: bold;
+}
+/* ===== SAVED NOTICES SECTION ===== */
+#savedNoticeList {
+    margin-top: 15px;
+}
+#savedNoticeList .notice {
+    border: 2px solid #2196F3; /* Blue border for saved notices */
+    background-color: #e3f2fd; /* Light blue background */
+}
+body.dark #savedNoticeList .notice {
+    border: 2px solid #64b5f6;
+    background-color: #1565c0; /* Dark blue background for dark mode */
+    color: #ffffff;
+}
+/* ===== DARK MODE ===== */
+body.dark {
+    background: #121212;
+    color: #e0e0e0;
+}
+body.dark .container {
+    background: #1e1e1e;
+    color: #ffffff;
+}
+body.dark input,
+body.dark textarea,
+body.dark select {
+    background: #2a2a2a;
+    color: #ffffff;
+    border: 1px solid #555;
+}
+body.dark button {
+    background: #333;
+    color: #ffffff;
+}
+body.dark .notice {
+    background: #1f1f1f;
+    color: #ffffff;
+    border: 2px solid #555;
+}
+body.dark .notice small {
+    color: #cccccc;
+}
+body.dark .unread-text {
+    color: #ff6b6b;
+}
+/* ===== COLLEGE HEADER ===== */
+.college-header {
+    width: 100%;
+    background-color: #0d47a1;
+    color: white;
+    display: flex;
+    align-items: center;
+    padding: 20px 30px;
+    gap: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    border-radius: 8px;
+    margin-bottom: 30px;
+    box-sizing: border-box;
+}
+.college-header .college-logo {
+    width: 100px;
+    height: auto;
+}
+.college-header .college-info {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+.college-header .college-info h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 800;
+}
+.college-header .college-info p {
+    margin: 2px 0;
+    font-size: 16px;
+}
+.college-header .college-info .minority {
+    color: #ffeb3b;
+    font-weight: bold;
+}
+body.dark .college-header {
+    background-color: #1e1e1e;
+    color: #ffffff;
+    box-shadow: 0 4px 10px rgba(255,255,255,0.1);
+}
+/* ===== RESPONSIVENESS FIX ===== */
+@media (max-width: 768px) {
+    .container {
+        width: 90%;
+    }
+    .college-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    .college-header .college-logo {
+        width: 80px;
+        margin-bottom: 10px;
+    }
+}</style>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+        import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBMHtfDrYlaAFE49lVTvmJ2MWdQnuAPJro",
+            authDomain: "digital-notice-board-27c9c.firebaseapp.com",
+            databaseURL: "https://digital-notice-board-27c9c-default-rtdb.firebaseio.com",
+            projectId: "digital-notice-board-27c9c",
+            storageBucket: "digital-notice-board-27c9c.firebasestorage.app",
+            messagingSenderId: "835434924523",
+            appId: "1:835434924523:web:2558d4d4f6cfcbb97671ae"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        let notices = [];
+        let noticeKeys = {};
+        let savedNotices = JSON.parse(localStorage.getItem("savedNotices")) || [];
+
+        async function loadNoticesFromFirebase() {
+            try {
+                const snapshot = await get(ref(db, "notices"));
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    notices = [];
+                    noticeKeys = {};
+                    for (const key in data) {
+                        notices.push(data[key]);
+                        noticeKeys[data[key].timestamp] = key;
+                    }
+                    notices.sort((a, b) => b.timestamp - a.timestamp);
+                } else { notices = []; }
+                displayNotices();
+            } catch(err) { console.error(err); alert("Failed to load notices."); }
+        }
+
+        async function markAsRead(notice) {
+            if (notice.read) return;
+            const key = noticeKeys[notice.timestamp];
+            if (!key) return;
+            try {
+                await update(ref(db, "notices/" + key), { read: true });
+                let i = notices.findIndex(n => n.timestamp === notice.timestamp);
+                if (i !== -1) notices[i].read = true;
+                displayNotices();
+            } catch(err) { console.error("Failed to mark as read:", err); }
+        }
+
+        function toggleSave(notice) {
+            let index = savedNotices.findIndex(n => n.timestamp === notice.timestamp);
+            if (index === -1) savedNotices.push(notice);
+            else savedNotices.splice(index, 1);
+            localStorage.setItem("savedNotices", JSON.stringify(savedNotices));
+            displayNotices();
+            displaySavedNotices();
+        }
+
+        // expose globally so onclick in HTML and dynamically created buttons work
+        window.toggleSave = toggleSave;
+
+        function displayNotices(listToShow = null) {
+            let list = document.getElementById("noticeList");
+            let today = new Date().toISOString().split("T")[0];
+            let data = listToShow || notices;
+            data = data.filter(n => n.expiry >= today);
+            data.sort((a, b) => b.timestamp - a.timestamp);
+            list.innerHTML = "";
+            if (data.length === 0) {
+                list.innerHTML = "<p style=\"text-align:center;color:#888;margin-top:20px;\">No notices found.</p>";
+                return;
+            }
+            data.forEach(n => {
+                let div = document.createElement("div");
+                div.className = "notice";
+                if (!n.read) div.classList.add("unread");
+                div.innerHTML = "<b>" + n.title + "</b> (" + n.cat + ") [" + n.year + "]<br>" +
+                    n.msg + "<br><small>Valid till: " + n.expiry + "</small>";
+                let isSaved = savedNotices.find(s => s.timestamp === n.timestamp);
+                let saveBtn = document.createElement("button");
+                saveBtn.textContent = isSaved ? "Unsave" : "Save";
+                saveBtn.style.marginTop = "8px";
+                saveBtn.onclick = e => { e.stopPropagation(); toggleSave(n); };
+                div.appendChild(saveBtn);
+                div.onclick = function() { markAsRead(n); };
+                list.appendChild(div);
+            });
+        }
+
+        function displaySavedNotices() {
+            let div = document.getElementById("savedNoticeList");
+            div.innerHTML = "";
+            if (savedNotices.length === 0) {
+                div.innerHTML = "<p>No saved notices.</p>";
+                return;
+            }
+            savedNotices.forEach(n => {
+                let d = document.createElement("div");
+                d.className = "notice";
+                d.innerHTML = "<b>" + n.title + "</b><br>" + n.msg +
+                    "<br><small>Valid till: " + n.expiry + "</small>";
+                // Use createElement for Unsave button — avoids onclick string scope issue
+                let unsaveBtn = document.createElement("button");
+                unsaveBtn.textContent = "Unsave";
+                unsaveBtn.style.marginTop = "8px";
+                unsaveBtn.onclick = function() { toggleSave(n); };
+                d.appendChild(unsaveBtn);
+                div.appendChild(d);
+            });
+        }
+
+        window.applyFilters = function() {
+            let y = document.getElementById("yearFilter").value;
+            let c = document.getElementById("categoryFilter").value;
+            let today = new Date().toISOString().split("T")[0];
+            let all = notices.filter(n => n.expiry >= today);
+            if (y !== "All") all = all.filter(n => n.year === y);
+            if (c !== "All") all = all.filter(n => n.cat === c);
+            displayNotices(all);
+        };
+
+        window.toggleDarkMode = function() {
+            document.body.classList.toggle("dark");
+            localStorage.setItem("dark_student", document.body.classList.contains("dark") ? "on" : "off");
+        };
+
+        window.onload = () => {
+            loadNoticesFromFirebase();
+            document.getElementById("toggleSavedBtn").onclick = () => {
+                let div = document.getElementById("savedNoticeList");
+                let btn = document.getElementById("toggleSavedBtn");
+                if (div.style.display === "none") {
+                    div.style.display = "block";
+                    btn.textContent = "Hide Saved Notices";
+                    displaySavedNotices();
+                } else {
+                    div.style.display = "none";
+                    btn.textContent = "View Saved Notices";
+                }
+            };
+            if (localStorage.getItem("dark_student") === "on") document.body.classList.add("dark");
+        };
+    </script>
+</head>
+<body class="student-page">
+<button onclick="toggleDarkMode()" style="float:right; margin:15px;">&#127769; Dark Mode</button>
+
+<div class="college-header">
+    <img src="college-logo.png" alt="College Logo" class="college-logo">
+    <div class="college-info">
+        <h1>WAVOO WAJEEHA WOMEN&#39;S COLLEGE OF ARTS AND SCIENCE</h1>
+        <p>Kayalpattinam &#8211; 628204</p>
+        <p>(Affiliated to Manonmaniam Sundaranar University)</p>
+        <p><strong>NAAC:</strong> B++</p>
+    </div>
+</div>
+
+<div class="container">
+    <h2>Student Notice Board</h2>
+    <select id="yearFilter" onchange="applyFilters()">
+        <option value="All">All Years</option>
+        <option value="I">I</option>
+        <option value="II">II</option>
+        <option value="III">III</option>
+    </select>
+    <select id="categoryFilter" onchange="applyFilters()">
+        <option value="All">All</option>
+        <option value="General">General</option>
+        <option value="Exam">Exam</option>
+        <option value="Event">Event</option>
+    </select>
+    <div id="noticeList"></div>
+    <button id="toggleSavedBtn" style="margin-top:15px;">View Saved Notices</button>
+    <div id="savedNoticeList" style="display:none;"></div>
+</div>
+</body>
+</html>

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Login</title>
+    <style>/* ===== GENERAL STYLES ===== */
+body {
+    font-family: Arial, sans-serif;
+    background: #f2f2f2;
+    margin: 0;
+    padding: 0;
+}
+.container {
+    width: 50%;
+    margin: 40px auto;
+    background: white;
+    padding: 20px;
+    box-sizing: border-box;
+}
+input, textarea, select {
+    width: 100%;
+    padding: 8px;
+    margin: 5px 0;
+    box-sizing: border-box;
+}
+button {
+    padding: 8px;
+    background: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+}
+button:hover {
+    opacity: 0.9;
+}
+.notice {
+    background-color: white;
+    padding: 12px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    border: 2px solid #ccc;
+}
+.notice.unread {
+    border: 3px solid red !important;
+    background-color: #ffecec;
+}
+.unread-text {
+    color: red;
+    font-weight: bold;
+}
+/* ===== SAVED NOTICES SECTION ===== */
+#savedNoticeList {
+    margin-top: 15px;
+}
+#savedNoticeList .notice {
+    border: 2px solid #2196F3; /* Blue border for saved notices */
+    background-color: #e3f2fd; /* Light blue background */
+}
+body.dark #savedNoticeList .notice {
+    border: 2px solid #64b5f6;
+    background-color: #1565c0; /* Dark blue background for dark mode */
+    color: #ffffff;
+}
+/* ===== DARK MODE ===== */
+body.dark {
+    background: #121212;
+    color: #e0e0e0;
+}
+body.dark .container {
+    background: #1e1e1e;
+    color: #ffffff;
+}
+body.dark input,
+body.dark textarea,
+body.dark select {
+    background: #2a2a2a;
+    color: #ffffff;
+    border: 1px solid #555;
+}
+body.dark button {
+    background: #333;
+    color: #ffffff;
+}
+body.dark .notice {
+    background: #1f1f1f;
+    color: #ffffff;
+    border: 2px solid #555;
+}
+body.dark .notice small {
+    color: #cccccc;
+}
+body.dark .unread-text {
+    color: #ff6b6b;
+}
+/* ===== COLLEGE HEADER ===== */
+.college-header {
+    width: 100%;
+    background-color: #0d47a1;
+    color: white;
+    display: flex;
+    align-items: center;
+    padding: 20px 30px;
+    gap: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    border-radius: 8px;
+    margin-bottom: 30px;
+    box-sizing: border-box;
+}
+.college-header .college-logo {
+    width: 100px;
+    height: auto;
+}
+.college-header .college-info {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+.college-header .college-info h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 800;
+}
+.college-header .college-info p {
+    margin: 2px 0;
+    font-size: 16px;
+}
+.college-header .college-info .minority {
+    color: #ffeb3b;
+    font-weight: bold;
+}
+body.dark .college-header {
+    background-color: #1e1e1e;
+    color: #ffffff;
+    box-shadow: 0 4px 10px rgba(255,255,255,0.1);
+}
+/* ===== RESPONSIVENESS FIX ===== */
+@media (max-width: 768px) {
+    .container {
+        width: 90%;
+    }
+    .college-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    .college-header .college-logo {
+        width: 80px;
+        margin-bottom: 10px;
+    }
+}</style>
+</head>
+<body>
+
+<button onclick="toggleDarkMode()" style="float:right; margin:15px;">&#127769; Dark Mode</button>
+
+<div class="college-header">
+    <img src="college-logo.png" alt="College Logo" class="college-logo">
+    <div class="college-info">
+        <h1>WAVOO WAJEEHA WOMEN&#39;S COLLEGE OF ARTS AND SCIENCE</h1>
+        <p>Kayalpattinam &#8211; 628204</p>
+        <p>(Affiliated to Manonmaniam Sundaranar University, Tirunelveli)</p>
+        <p>Run by Wavoo SAR Educational Trust <span class="minority">(Minority Institution)</span></p>
+        <p><strong>NAAC ACCREDITATION:</strong> <span class="naac-grade">B++</span> | CGPA 2.85 | (First Cycle)</p>
+    </div>
+</div>
+
+<!-- ACCESS DENIED shown only on GitHub Pages live link -->
+<div id="accessDeniedMsg" style="display:none; text-align:center; margin-top:60px;">
+    <h2 style="color:red;">&#9940; Access Denied</h2>
+    <p>The Admin Panel is only accessible from the authorized system.</p>
+    <a href="index.html" style="color:#007bff;">&#8592; Go to Student Notice Board</a>
+</div>
+
+<div class="container" id="loginBox">
+    <h2>Admin Login</h2>
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button id="loginBtn" onclick="adminLogin()">Login</button>
+</div>
+
+<script>
+const ADMIN_USER = "Maseera";
+const ADMIN_PASS = "2005";
+let loginAttempts = 0;
+const MAX_ATTEMPTS = 3;
+
+window.onload = function () {
+    // Block ONLY when opened from GitHub Pages live link
+    if (window.location.hostname.endsWith("github.io")) {
+        document.getElementById("loginBox").style.display = "none";
+        document.getElementById("accessDeniedMsg").style.display = "block";
+        return;
+    }
+    // Local file / Downloads / any other location = show login normally
+    if (localStorage.getItem("dark_admin") === "on") document.body.classList.add("dark");
+};
+
+function adminLogin() {
+    const usernameField = document.getElementById("username");
+    const passwordField = document.getElementById("password");
+    const loginBtn = document.getElementById("loginBtn");
+    const u = usernameField.value.trim();
+    const p = passwordField.value.trim();
+    if (u === ADMIN_USER && p === ADMIN_PASS) {
+        loginAttempts = 0;
+        sessionStorage.setItem("admin_logged_in", "yes");
+        showSuccessPopup("Login Successful!");
+        setTimeout(() => window.location.href = "admin.html", 1000);
+    } else {
+        loginAttempts++;
+        if (loginAttempts >= MAX_ATTEMPTS) {
+            showHighWarning("Account Locked! Too many failed attempts.");
+            usernameField.disabled = true;
+            passwordField.disabled = true;
+            loginBtn.disabled = true;
+        } else {
+            showHighWarning("Invalid Username or Password! Attempt " + loginAttempts + " of " + MAX_ATTEMPTS);
+        }
+    }
+}
+
+function showHighWarning(message) {
+    const oldAlert = document.getElementById("highAlert");
+    if (oldAlert) oldAlert.remove();
+    const alertDiv = document.createElement("div");
+    alertDiv.id = "highAlert";
+    alertDiv.textContent = message;
+    alertDiv.style.backgroundColor = "#ff4d4d";
+    alertDiv.style.color = "white";
+    alertDiv.style.padding = "15px";
+    alertDiv.style.textAlign = "center";
+    alertDiv.style.fontWeight = "bold";
+    alertDiv.style.marginTop = "10px";
+    alertDiv.style.borderRadius = "5px";
+    alertDiv.style.boxShadow = "0 0 15px red";
+    document.body.prepend(alertDiv);
+    setTimeout(() => alertDiv.remove(), 4000);
+}
+
+function showSuccessPopup(message) {
+    const popup = document.createElement("div");
+    popup.textContent = message;
+    popup.style.position = "fixed";
+    popup.style.top = "20px";
+    popup.style.left = "50%";
+    popup.style.transform = "translateX(-50%)";
+    popup.style.backgroundColor = "#4CAF50";
+    popup.style.color = "white";
+    popup.style.padding = "20px 40px";
+    popup.style.borderRadius = "10px";
+    popup.style.boxShadow = "0 0 15px green";
+    popup.style.fontWeight = "bold";
+    popup.style.zIndex = "9999";
+    document.body.appendChild(popup);
+    setTimeout(() => popup.remove(), 3000);
+}
+
+function toggleDarkMode() {
+    document.body.classList.toggle("dark");
+    localStorage.setItem("dark_admin", document.body.classList.contains("dark") ? "on" : "off");
+}
+
+document.getElementById("username").addEventListener("keypress", function(e) { if (e.key === "Enter") adminLogin(); });
+document.getElementById("password").addEventListener("keypress", function(e) { if (e.key === "Enter") adminLogin(); });
+</script>
+</body>
+</html>
